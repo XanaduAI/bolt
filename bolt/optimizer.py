@@ -9,6 +9,7 @@ from .tree import Tree
 from .liealgebra import L, dV_dlambdas
 from .states import Requirements
 
+
 class Optimizer:
     """
     Interferometer optimizer class. Create an instance by specifying:
@@ -20,7 +21,8 @@ class Optimizer:
         >>> opt = Optimizer(lr=0.01, epsilon=1e-4)
         >>> cov_matrix = opt(requirements)
     """
-    def __init__(self, lr:float, epsilon:float = 1e-6, max_steps:int = 1000, cov_matrix_init=None, natural:bool = False):
+
+    def __init__(self, lr: float, epsilon: float = 1e-6, max_steps: int = 1000, cov_matrix_init=None, natural: bool = False):
         self.epsilon = epsilon
         self.max_steps = max_steps
         self.losses = []
@@ -36,14 +38,13 @@ class Optimizer:
 
     @staticmethod
     def mse(x, y):
-        return 0.5*(x-y)**2
+        return 0.5 * (x - y) ** 2
 
-    
-    def __call__(self, req:Requirements):
+    def __call__(self, req: Requirements):
         """
         The optimizer instance supports being called as a function on a Requirements object.
         It records the list of losses (self.losses) and the elapsed time (self.elapsed).
-        
+
         Arguments:
             req (Requirements): requirements object
         Returns:
@@ -53,10 +54,10 @@ class Optimizer:
         if self.cov_matrix_init:
             V = self.cov_matrix_init
         else:
-            lambdas = np.random.normal(size=req.modes**2, scale=0.01)
+            lambdas = np.random.normal(size=req.modes ** 2, scale=0.01)
             V = expm(L(lambdas))
         if self.natural:
-            A = np.block([[np.real(V), -np.imag(V)],[np.imag(V), np.real(V)]])
+            A = np.block([[np.real(V), -np.imag(V)], [np.imag(V), np.real(V)]])
 
         self.losses = [1e6]
         try:
@@ -65,40 +66,37 @@ class Optimizer:
                 grad_update = 0
                 loss = 0
                 self.probs = []
-                for io,prob in req.specs.items():
+                for io, prob in req.specs.items():
                     tree = Tree(io=io, covariance_matrix=V, grad=True)
                     a, da_dV = tree.amplitude()
-                    p = abs(a)**2
+                    p = abs(a) ** 2
                     self.probs.append(p)
-                    dL_da = np.conj(a)*(p - prob) - prob**2/a
+                    dL_da = np.conj(a) * (p - prob) - prob ** 2 / a
 
                     if self.natural:
-                        da_dA = np.block([[da_dV, -1j*da_dV],[1j*da_dV, da_dV]])
-                        grad_update += 2*np.real(dL_da * da_dA)
+                        da_dA = np.block([[da_dV, -1j * da_dV], [1j * da_dV, da_dV]])
+                        grad_update += 2 * np.real(dL_da * da_dA)
                     else:
-                        da_dlambdas = np.sum(da_dV * dV_dlambdas(lambdas), axis=(1,2))
-                        grad_update += 2*np.real(dL_da * da_dlambdas)
-                    
-                    loss += self.mse(p, prob) - prob*np.log(p/prob)
+                        da_dlambdas = np.sum(da_dV * dV_dlambdas(lambdas), axis=(1, 2))
+                        grad_update += 2 * np.real(dL_da * da_dlambdas)
+
+                    loss += self.mse(p, prob) - prob * np.log(p / prob)
                 self.losses.append(loss)
                 if self.natural:
                     Q = grad_update
-                    D = 0.5*(Q - A @ Q.T @ A) # natural gradient
+                    D = 0.5 * (Q - A @ Q.T @ A)  # natural gradient
                     A = A @ expm(self.lr * D.T @ A)
-                    V = A[:len(V), :len(V)] + 1j*A[len(V):, :len(V)]
+                    V = A[: len(V), : len(V)] + 1j * A[len(V) :, : len(V)]
                 else:
                     lambdas = self.opt.update(lambdas, grad_update, None, None)
                     V = expm(L(lambdas))
-                P = ', '.join([f'{p:.4f}' for p in self.probs])
+                P = ", ".join([f"{p:.4f}" for p in self.probs])
                 progress.set_description(f"{step}: probs = [{P}], loss = {loss:.4f}")
                 if abs(self.losses[-2] - self.losses[-1]) < self.epsilon:
                     break
         except KeyboardInterrupt:
-            print('gracefully stopping optimization...')
+            print("gracefully stopping optimization...")
         self.losses.pop(0)
         toc = time.time()
-        self.elapsed = toc-tic
+        self.elapsed = toc - tic
         return V
-
-
-

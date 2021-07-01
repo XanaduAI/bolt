@@ -1,11 +1,14 @@
 import numpy as np
 import math
 
-def _smart_matrix_product(A,B,structure):
-    return np.dot(A,B)
+
+def _smart_matrix_product(A, B, structure):
+    return np.dot(A, B)
+
 
 def _onenorm(A):
     return np.linalg.norm(A, 1)
+
 
 class _ExpmPadeHelper:
     """
@@ -14,6 +17,7 @@ class _ExpmPadeHelper:
     so we lazily compute matrix powers and store or precompute
     other properties of the matrix.
     """
+
     def __init__(self, A, use_exact_onenorm=False):
         """
         Initialize the object.
@@ -50,66 +54,61 @@ class _ExpmPadeHelper:
     @property
     def A2(self):
         if self._A2 is None:
-            self._A2 = _smart_matrix_product(
-                    self.A, self.A, structure=self.structure)
+            self._A2 = _smart_matrix_product(self.A, self.A, structure=self.structure)
         return self._A2
 
     @property
     def A4(self):
         if self._A4 is None:
-            self._A4 = _smart_matrix_product(
-                    self.A2, self.A2, structure=self.structure)
+            self._A4 = _smart_matrix_product(self.A2, self.A2, structure=self.structure)
         return self._A4
 
     @property
     def A6(self):
         if self._A6 is None:
-            self._A6 = _smart_matrix_product(
-                    self.A4, self.A2, structure=self.structure)
+            self._A6 = _smart_matrix_product(self.A4, self.A2, structure=self.structure)
         return self._A6
 
     @property
     def A8(self):
         if self._A8 is None:
-            self._A8 = _smart_matrix_product(
-                    self.A6, self.A2, structure=self.structure)
+            self._A8 = _smart_matrix_product(self.A6, self.A2, structure=self.structure)
         return self._A8
 
     @property
     def A10(self):
         if self._A10 is None:
-            self._A10 = _smart_matrix_product(
-                    self.A4, self.A6, structure=self.structure)
+            self._A10 = _smart_matrix_product(self.A4, self.A6, structure=self.structure)
         return self._A10
 
     @property
     def d4_tight(self):
         if self._d4_exact is None:
-            self._d4_exact = _onenorm(self.A4)**(1/4.)
+            self._d4_exact = _onenorm(self.A4) ** (1 / 4.0)
         return self._d4_exact
 
     @property
     def d6_tight(self):
         if self._d6_exact is None:
-            self._d6_exact = _onenorm(self.A6)**(1/6.)
+            self._d6_exact = _onenorm(self.A6) ** (1 / 6.0)
         return self._d6_exact
 
     @property
     def d8_tight(self):
         if self._d8_exact is None:
-            self._d8_exact = _onenorm(self.A8)**(1/8.)
+            self._d8_exact = _onenorm(self.A8) ** (1 / 8.0)
         return self._d8_exact
 
     @property
     def d10_tight(self):
         if self._d10_exact is None:
-            self._d10_exact = _onenorm(self.A10)**(1/10.)
+            self._d10_exact = _onenorm(self.A10) ** (1 / 10.0)
         return self._d10_exact
 
     @property
     def d4_loose(self):
         return self.d4_tight
-        
+
     @property
     def d6_loose(self):
         return self.d6_tight
@@ -123,60 +122,60 @@ class _ExpmPadeHelper:
         return self.d10_tight
 
     def pade3(self):
-        b = (120., 60., 12., 1.)
-        U = _smart_matrix_product(self.A,
-                b[3]*self.A2 + b[1]*self.ident,
-                structure=self.structure)
-        V = b[2]*self.A2 + b[0]*self.ident
+        b = (120.0, 60.0, 12.0, 1.0)
+        U = _smart_matrix_product(self.A, b[3] * self.A2 + b[1] * self.ident, structure=self.structure)
+        V = b[2] * self.A2 + b[0] * self.ident
         return U, V
 
     def pade5(self):
-        b = (30240., 15120., 3360., 420., 30., 1.)
-        U = _smart_matrix_product(self.A,
-                b[5]*self.A4 + b[3]*self.A2 + b[1]*self.ident,
-                structure=self.structure)
-        V = b[4]*self.A4 + b[2]*self.A2 + b[0]*self.ident
+        b = (30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0)
+        U = _smart_matrix_product(self.A, b[5] * self.A4 + b[3] * self.A2 + b[1] * self.ident, structure=self.structure)
+        V = b[4] * self.A4 + b[2] * self.A2 + b[0] * self.ident
         return U, V
 
     def pade7(self):
-        b = (17297280., 8648640., 1995840., 277200., 25200., 1512., 56., 1.)
-        U = _smart_matrix_product(self.A,
-                b[7]*self.A6 + b[5]*self.A4 + b[3]*self.A2 + b[1]*self.ident,
-                structure=self.structure)
-        V = b[6]*self.A6 + b[4]*self.A4 + b[2]*self.A2 + b[0]*self.ident
+        b = (17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0, 56.0, 1.0)
+        U = _smart_matrix_product(
+            self.A, b[7] * self.A6 + b[5] * self.A4 + b[3] * self.A2 + b[1] * self.ident, structure=self.structure
+        )
+        V = b[6] * self.A6 + b[4] * self.A4 + b[2] * self.A2 + b[0] * self.ident
         return U, V
 
     def pade9(self):
-        b = (17643225600., 8821612800., 2075673600., 302702400., 30270240.,
-                2162160., 110880., 3960., 90., 1.)
-        U = _smart_matrix_product(self.A,
-                (b[9]*self.A8 + b[7]*self.A6 + b[5]*self.A4 +
-                    b[3]*self.A2 + b[1]*self.ident),
-                structure=self.structure)
-        V = (b[8]*self.A8 + b[6]*self.A6 + b[4]*self.A4 +
-                b[2]*self.A2 + b[0]*self.ident)
+        b = (17643225600.0, 8821612800.0, 2075673600.0, 302702400.0, 30270240.0, 2162160.0, 110880.0, 3960.0, 90.0, 1.0)
+        U = _smart_matrix_product(
+            self.A,
+            (b[9] * self.A8 + b[7] * self.A6 + b[5] * self.A4 + b[3] * self.A2 + b[1] * self.ident),
+            structure=self.structure,
+        )
+        V = b[8] * self.A8 + b[6] * self.A6 + b[4] * self.A4 + b[2] * self.A2 + b[0] * self.ident
         return U, V
 
     def pade13_scaled(self, s):
-        b = (64764752532480000., 32382376266240000., 7771770303897600.,
-                1187353796428800., 129060195264000., 10559470521600.,
-                670442572800., 33522128640., 1323241920., 40840800., 960960.,
-                16380., 182., 1.)
-        B = self.A * 2**-s
-        B2 = self.A2 * 2**(-2*s)
-        B4 = self.A4 * 2**(-4*s)
-        B6 = self.A6 * 2**(-6*s)
-        U2 = _smart_matrix_product(B6,
-                b[13]*B6 + b[11]*B4 + b[9]*B2,
-                structure=self.structure)
-        U = _smart_matrix_product(B,
-                (U2 + b[7]*B6 + b[5]*B4 +
-                    b[3]*B2 + b[1]*self.ident),
-                structure=self.structure)
-        V2 = _smart_matrix_product(B6,
-                b[12]*B6 + b[10]*B4 + b[8]*B2,
-                structure=self.structure)
-        V = V2 + b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*self.ident
+        b = (
+            64764752532480000.0,
+            32382376266240000.0,
+            7771770303897600.0,
+            1187353796428800.0,
+            129060195264000.0,
+            10559470521600.0,
+            670442572800.0,
+            33522128640.0,
+            1323241920.0,
+            40840800.0,
+            960960.0,
+            16380.0,
+            182.0,
+            1.0,
+        )
+        B = self.A * 2 ** -s
+        B2 = self.A2 * 2 ** (-2 * s)
+        B4 = self.A4 * 2 ** (-4 * s)
+        B6 = self.A6 * 2 ** (-6 * s)
+        U2 = _smart_matrix_product(B6, b[13] * B6 + b[11] * B4 + b[9] * B2, structure=self.structure)
+        U = _smart_matrix_product(B, (U2 + b[7] * B6 + b[5] * B4 + b[3] * B2 + b[1] * self.ident), structure=self.structure)
+        V2 = _smart_matrix_product(B6, b[12] * B6 + b[10] * B4 + b[8] * B2, structure=self.structure)
+        V = V2 + b[6] * B6 + b[4] * B4 + b[2] * B2 + b[0] * self.ident
         return U, V
 
 
@@ -203,7 +202,7 @@ def expm(A):
     if eta_3 < 9.504178996162932e-001 and _ell(h.A, 7) == 0:
         U, V = h.pade7()
         return _solve_P_Q(U, V)
-    if eta_3 < 2.097847961257068e+000 and _ell(h.A, 9) == 0:
+    if eta_3 < 2.097847961257068e000 and _ell(h.A, 9) == 0:
         U, V = h.pade9()
         return _solve_P_Q(U, V)
 
@@ -218,7 +217,7 @@ def expm(A):
         s = 0
     else:
         s = max(int(np.ceil(np.log2(eta_5 / theta_13))), 0)
-    s = s + _ell(2**-s * h.A, 13)
+    s = s + _ell(2 ** -s * h.A, 13)
     U, V = h.pade13_scaled(s)
     X = _solve_P_Q(U, V)
     for i in range(s):
@@ -264,22 +263,22 @@ def _ell(A, m):
     """
     # The c_i are explained in (2.2) and (2.6) of the 2005 expm paper.
     # They are coefficients of terms of a generating function series expansion.
-    choose_2m_m = math.comb(2*m, m)
-    abs_c_recip = float(choose_2m_m) * float(math.factorial(2*m + 1))
+    choose_2m_m = math.comb(2 * m, m)
+    abs_c_recip = float(choose_2m_m) * float(math.factorial(2 * m + 1))
 
     # This is explained after Eq. (1.2) of the 2009 expm paper.
     # It is the "unit roundoff" of IEEE double precision arithmetic.
-    u = 2**-53
+    u = 2 ** -53
 
     # Compute the one-norm of matrix power p of abs(A).
-    A_abs_onenorm = _onenorm_matrix_power_nnm(abs(A), 2*m + 1)
+    A_abs_onenorm = _onenorm_matrix_power_nnm(abs(A), 2 * m + 1)
 
     # Treat zero norm as a special case.
     if not A_abs_onenorm:
         return 0
 
     alpha = A_abs_onenorm / (_onenorm(A) * abs_c_recip)
-    log2_alpha_div_u = np.log2(alpha/u)
+    log2_alpha_div_u = np.log2(alpha / u)
     value = int(np.ceil(log2_alpha_div_u / (2 * m)))
     return max(value, 0)
 
@@ -300,10 +299,10 @@ def _onenorm_matrix_power_nnm(A, p):
     """
     # check input
     if int(p) != p or p < 0:
-        raise ValueError('expected non-negative integer p')
+        raise ValueError("expected non-negative integer p")
     p = int(p)
     if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
-        raise ValueError('expected A to be like a square matrix')
+        raise ValueError("expected A to be like a square matrix")
 
     # Explicitly make a column vector so that this works when A is a
     # numpy matrix (in addition to ndarray and sparse matrix).
